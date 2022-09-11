@@ -1,16 +1,20 @@
 const express = require("express");
+const dotenv = require("dotenv");
 const tmi = require('tmi.js');
 const { createServer } = require("https");
 const { Server } = require("socket.io");
 var fs = require( 'fs' );
 
+dotenv.config();
+
+
 const app = express();
 const httpServer = createServer({
-  key: fs.readFileSync("/var/www/home.mrdarrengriffin.com.key"),
-  cert: fs.readFileSync("/var/www/home.mrdarrengriffin.com.pem")
+  key: fs.readFileSync("./server.key"),
+  cert: fs.readFileSync("./server.cert")
 },app);
 const io = new Server(httpServer, { cors: {
-  origin: "https://sandbox.mrdarrengriffin.com"
+  origin: "https://localhost:8000",
 } });
 
 app.use(function(req, res, next) {
@@ -62,27 +66,7 @@ function registerChat(streamer){
   });
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-httpServer.listen(8443);
+httpServer.listen(3000);
 
 
 
