@@ -9,9 +9,12 @@ dotenv.config();
 
 
 const app = express();
-const httpServer = createServer(app);
+const httpServer = createServer({
+  key: fs.readFileSync("./server.key"),
+  cert: fs.readFileSync("./server.cert")
+},app);
 const io = new Server(httpServer, { cors: {
-  origin: "https://justchatting.io",
+  origin: "https://api.justchatting.io:2083",
 } });
 
 app.use(function(req, res, next) {
