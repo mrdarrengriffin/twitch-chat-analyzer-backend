@@ -11,7 +11,7 @@ dotenv.config();
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: {
-  origin: "https://api.justchatting.io:2083",
+  origin: "https://justchatting.io",
 } });
 
 app.use(function(req, res, next) {
