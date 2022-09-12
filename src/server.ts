@@ -14,7 +14,7 @@ const httpServer = createServer({
   cert: fs.readFileSync("./server.cert")
 },app);
 const io = new Server(httpServer, { cors: {
-  origin: "https://api.justchatting.io:2083",
+  origin: "*",
 } });
 
 app.use(function(req, res, next) {
@@ -37,26 +37,13 @@ function getActiveRooms(io) {
 
 var rooms = [];
 
-const wirtualReplay = JSON.parse(fs.readFileSync('./wirtual-12-09-2022.json', 'utf8'));
-const limit = 500;
-let current = 0;
-
 io.on("connection", (socket) => {
   socket.on('streamer', function(streamer){
     console.log(socket.id, streamer);
     socket.join(streamer);
     if(!rooms.includes(streamer)){
       rooms.push(streamer);
-      //registerChat(streamer);
-      wirtualReplay.rows.forEach((row) => {
-        if(current > limit){
-         // return;
-        }
-        current = current + 1;
-        setTimeout(() => {
-          io.to('wirtual').emit('chat', {channel: 'wirtual', tags: JSON.parse(row.tags), message: row.message});   
-        },1000);
-      });
+      registerChat(streamer);
     }
   })
 
