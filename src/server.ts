@@ -9,12 +9,9 @@ dotenv.config();
 
 
 const app = express();
-const httpServer = createServer({
-  key: fs.readFileSync("./server.key"),
-  cert: fs.readFileSync("./server.cert")
-},app);
+const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: {
-  origin: "https://localhost:8000",
+  origin: "https://api.justchatting.io:2083",
 } });
 
 app.use(function(req, res, next) {
@@ -37,6 +34,9 @@ function getActiveRooms(io) {
 
 var rooms = [];
 
+const wirtualReplay = JSON.parse(fs.readFileSync('./wirtual-12-09-2022.json', 'utf8'));
+const limit = 500;
+let current = 0;
 
 io.on("connection", (socket) => {
   socket.on('streamer', function(streamer){
@@ -44,12 +44,21 @@ io.on("connection", (socket) => {
     socket.join(streamer);
     if(!rooms.includes(streamer)){
       rooms.push(streamer);
-      registerChat(streamer);
+      //registerChat(streamer);
+      wirtualReplay.rows.forEach((row) => {
+        if(current > limit){
+         // return;
+        }
+        current = current + 1;
+        setTimeout(() => {
+          io.to('wirtual').emit('chat', {channel: 'wirtual', tags: JSON.parse(row.tags), message: row.message});   
+        },1000);
+      });
     }
   })
+
+
 });
-
-
 
 let chats = [];
 
@@ -66,7 +75,7 @@ function registerChat(streamer){
   });
 }
 
-httpServer.listen(3000);
+httpServer.listen(2083);
 
 
 
