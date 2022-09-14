@@ -1,72 +1,72 @@
+import { createEvalAwarePartialHost } from "ts-node/dist/repl";
+import { TwitchChannel } from "./classes/TwitchChannel";
+
+// Dependencies
+const axios = require("axios");
 const express = require("express");
-const dotenv = require("dotenv");
-const tmi = require('tmi.js');
+const tmi = require("tmi.js");
 const { createServer } = require("https");
 const { Server } = require("socket.io");
-var fs = require( 'fs' );
+var fs = require("fs");
+const mongoose = require("mongoose");
 
-dotenv.config();
+// Initialize MongoDB connection
+mongoose.connect('mongodb://' + process.env.DB_HOST + ':' + process.env.DB_PORT + '/' + process.env.DB_NAME).catch(e => { console.log(e) })
 
 
+// Initialize express
 const app = express();
-const httpServer = createServer({
-  key: fs.readFileSync("./server.key"),
-  cert: fs.readFileSync("./server.cert")
-},app);
-const io = new Server(httpServer, { cors: {
-  origin: "*",
-} });
 
-app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "X-Requested-With");
-  res.header("Access-Control-Allow-Headers", "Content-Type");
-  res.header("Access-Control-Allow-Methods", "PUT, GET, POST, DELETE, OPTIONS");
-  next();
+// Intialize web server with certificate
+const httpServer = createServer(
+    {
+        key: fs.readFileSync("./server.key"),
+        cert: fs.readFileSync("./server.cert"),
+    },
+    app
+);
+
+// Allow any origin with SocketIO
+const io = new Server(httpServer, {
+    cors: {
+        origin: "*",
+    },
 });
 
-function getActiveRooms(io) {
-
-  const arr = Array.from(io.sockets.adapter.rooms);
-
-  const filtered = arr.filter(room => !room[1].has(room[0]))
-
-  const res = filtered.map(i => i[0]);
-  return res;
-}
-
-var rooms = [];
-
-io.on("connection", (socket) => {
-  socket.on('streamer', function(streamer){
-    console.log(socket.id, streamer);
-    socket.join(streamer);
-    if(!rooms.includes(streamer)){
-      rooms.push(streamer);
-      registerChat(streamer);
-    }
-  })
-
-
+// Allow any origin with express
+app.use(function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "X-Requested-With");
+    res.header("Access-Control-Allow-Headers", "Content-Type");
+    res.header(
+        "Access-Control-Allow-Methods",
+        "PUT, GET, POST, DELETE, OPTIONS"
+    );
+    next();
 });
 
-let chats = [];
+const TwitchChannelSchema = require("./models/TwitchChannel");
 
-function registerChat(streamer){
-  console.log('Chat registered: ' + streamer);
-  chats[streamer] = new tmi.Client({
-    channels: [ streamer ]
-  });
-  
-  chats[streamer].connect();
-  
-  chats[streamer].on('message', (channel, tags, message, self) => {
-    io.to(channel.replace('#','')).emit('chat', {channel: channel.replace('#', ''), tags: tags, message: message});   
-  });
-}
+// For every channel, check live status once every 3 seconds
+setInterval(async () => {
+    const channels = await TwitchChannel.getAllChannels();
+    channels.forEach(async (channel) => {
+        const twitchChannel = new TwitchChannel('');
+        twitchChannel.channel = channel;
+
+        const previousLiveState = channel.is_live;
+        const newLiveState = await twitchChannel.isChannelLive();
+        if(previousLiveState !== newLiveState){
+            console.log(channel.display_name + ' has ' + (newLiveState ? 'started' : 'stopped') + ' streaming');
+        }
+
+    });
+},3000);
+
+app.get("/streamer/:streamer", async (req, res) => {
+    const channels = await TwitchChannel.getAllChannels();
+    res.send(JSON.stringify(channels));
+});
+
 
 httpServer.listen(2083);
-
-
-
-

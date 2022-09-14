@@ -4,14 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon src/server.ts",
-    "server": "node dist/server.js"
+    "dev": "nodemon -r dotenv/config src/server.ts"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.27.2",
     "dotenv": "^16.0.2",
     "express": "^4.18.1",
+    "mongoose": "^6.6.1",
     "socket.io": "^4.5.2",
     "tmi.js": "^1.8.5",
     "ts-node": "^10.9.1",
