@@ -1,5 +1,8 @@
 import { createEvalAwarePartialHost } from "ts-node/dist/repl";
 import { TwitchChannel } from "./classes/TwitchChannel";
+import { TwitchChannels } from "./classes/TwitchChannels";
+const TwitchChannelSchema = require("./models/TwitchChannel");
+
 
 // Dependencies
 const axios = require("axios");
@@ -45,27 +48,36 @@ app.use(function (req, res, next) {
     next();
 });
 
-const TwitchChannelSchema = require("./models/TwitchChannel");
+
+const channels = new TwitchChannels();
+channels.refreshStreamers().then(function(a){
+    
+});
+TwitchChannelSchema.findOne({login:'limmy'}).then(l => {
+
+    const w = new TwitchChannel(l);
+});
 
 // For every channel, check live status once every 3 seconds
-setInterval(async () => {
-    const channels = await TwitchChannel.getAllChannels();
-    channels.forEach(async (channel) => {
-        const twitchChannel = new TwitchChannel('');
-        twitchChannel.channel = channel;
+// console.log('Starting regular stream state changes');
+// setInterval(async () => {
+//     const channels = await TwitchChannel.getAllChannels();
+//     channels.forEach(async (channel) => {
+//         const twitchChannel = new TwitchChannel('');
+//         twitchChannel.channel = channel;
 
-        const previousLiveState = channel.is_live;
-        const newLiveState = await twitchChannel.isChannelLive();
-        if(previousLiveState !== newLiveState){
-            console.log(channel.display_name + ' has ' + (newLiveState ? 'started' : 'stopped') + ' streaming');
-        }
-
-    });
-},3000);
+//         const previousLiveState = channel.is_live;
+//         const newLiveState = await twitchChannel.isChannelLive();
+//         if(previousLiveState !== newLiveState){
+//             console.log(channel.display_name + ' has ' + (newLiveState ? 'started' : 'stopped') + ' streaming');
+//         }
+//     });
+// },3000);
 
 app.get("/streamer/:streamer", async (req, res) => {
-    const channels = await TwitchChannel.getAllChannels();
-    res.send(JSON.stringify(channels));
+    const channel = new TwitchChannel(req.params.streamer);
+    //await channel.loadStreamer();
+    //res.send(JSON.stringify(channel.channel));
 });
 
 

@@ -7,30 +7,31 @@ export class TwitchChannel {
     channel;
     private channelId = 1;
 
-    constructor(login: string) {
-        this.loginLookup = login;
+    constructor(channel: string | ITwitchChannel) {
+        console.log(typeof channel);
+        this.channel = channel;
     }
 
-    async loadStreamer() {
+    async loadStreamer(login: string) {
         // Try and find the streamer info in the DB
         const dbStreamer = await TwitchChannelSchema.findOne({
-            login: this.loginLookup,
+            login: login,
         }).exec();
 
         if (dbStreamer) {
             console.log("Streamer found in DB");
             this.channel = dbStreamer;
-            await this.isChannelLive();
+            await this.getStreamInfo();
             return true;
         }
 
         console.log("Streamer missing in DB. Will populate");
         // Get the streamer by name
-        let streamerInfo = await this.getBroadcasterID(this.loginLookup);
+        let streamerInfo = await this.getBroadcasterID(login);
         if (!streamerInfo.data.length) {
             // Streamer lookup failed
             console.log(
-                `Streamer '${this.loginLookup}' is not a valid Twitch username`
+                `Streamer '${login}' is not a valid Twitch username`
             );
             return false;
         }
@@ -57,7 +58,7 @@ export class TwitchChannel {
 
         this.channel = channel;
 
-        await this.isChannelLive();
+        await this.getStreamInfo();
     }
 
     byChannel(channel: ITwitchChannel){
@@ -115,7 +116,7 @@ export class TwitchChannel {
     }
   
 
-    async isChannelLive() {
+    async getStreamInfo() {
         return await axios
             .get(
                 "https://api.twitch.tv/helix/streams?user_id=" +
