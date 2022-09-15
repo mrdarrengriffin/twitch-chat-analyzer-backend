@@ -1,8 +1,7 @@
 import { createEvalAwarePartialHost } from "ts-node/dist/repl";
-import { TwitchChannel } from "./classes/TwitchChannel";
-import { TwitchChannels } from "./classes/TwitchChannels";
+import { NewTwitchChannel } from "./classes/NewTwitchChannel";
+import { TwitchChannels } from "./classes/old/TwitchChannels";
 const TwitchChannelSchema = require("./models/TwitchChannel");
-
 
 // Dependencies
 const axios = require("axios");
@@ -14,8 +13,18 @@ var fs = require("fs");
 const mongoose = require("mongoose");
 
 // Initialize MongoDB connection
-mongoose.connect('mongodb://' + process.env.DB_HOST + ':' + process.env.DB_PORT + '/' + process.env.DB_NAME).catch(e => { console.log(e) })
-
+mongoose
+    .connect(
+        "mongodb://" +
+            process.env.DB_HOST +
+            ":" +
+            process.env.DB_PORT +
+            "/" +
+            process.env.DB_NAME
+    )
+    .catch((e) => {
+        console.log(e);
+    });
 
 // Initialize express
 const app = express();
@@ -48,15 +57,14 @@ app.use(function (req, res, next) {
     next();
 });
 
-
-const channels = new TwitchChannels();
-channels.refreshStreamers().then(function(a){
-    
-});
-TwitchChannelSchema.findOne({login:'limmy'}).then(l => {
-
-    const w = new TwitchChannel(l);
-});
+setInterval(() => {
+    const allStreamers = TwitchChannelSchema.find().then((result) => {
+        result.forEach((item) => {
+            const a = new NewTwitchChannel();
+            a.byUsername(item.login);
+        });
+    });
+}, 5000);
 
 // For every channel, check live status once every 3 seconds
 // console.log('Starting regular stream state changes');
@@ -75,10 +83,9 @@ TwitchChannelSchema.findOne({login:'limmy'}).then(l => {
 // },3000);
 
 app.get("/streamer/:streamer", async (req, res) => {
-    const channel = new TwitchChannel(req.params.streamer);
+    //const channel = new TwitchChannel(req.params.streamer);
     //await channel.loadStreamer();
     //res.send(JSON.stringify(channel.channel));
 });
-
 
 httpServer.listen(2083);
